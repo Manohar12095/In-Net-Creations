@@ -28,6 +28,12 @@ export default function Home() {
   useEffect(() => {
     // ── Scroll Reveal (Intersection Observer) ──
     const revealElements = document.querySelectorAll('.reveal');
+    if (typeof window === 'undefined') return;
+    if (!('IntersectionObserver' in window)) {
+      revealElements.forEach((el) => el.classList.add('revealed'));
+      return;
+    }
+
     const revealObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

@@ -2,6 +2,15 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 
+import crypto from 'crypto';
+
+function safeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const hashA = crypto.createHash('sha256').update(a).digest();
+  const hashB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
 const FALLBACK_SECRET = 'innet-creations-admin-super-secret-key-2024-madurai';
 const DEFAULT_ADMIN_PASSWORD = 'innetadmin2024';
 
@@ -33,11 +42,14 @@ export const authOptions = {
         const adminPassword = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
         if (!credentials?.password) return null;
 
-        // Compare submitted password against env var or fallback
+        const submitted = String(credentials.password).trim();
+        const expected = String(adminPassword).trim();
+
+        // Timing-safe comparison to prevent timing side-channel attacks
         const isValid =
-          credentials.password === adminPassword ||
+          safeCompare(submitted, expected) ||
           (await bcrypt
-            .compare(credentials.password, adminPassword)
+            .compare(submitted, expected)
             .catch(() => false));
 
         if (!isValid) return null;
